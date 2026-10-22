@@ -22,6 +22,7 @@ jobs:
       AWS_REGION: "us-east-1"
       TF_VAR_db_password: "dummy_password_for_apply"
       TF_VAR_owner: "gna" # Modifie avec ton trigramme si besoin
+      TF_VAR_environment: "dev"
 
     steps:
       - uses: actions/checkout@v4
@@ -41,6 +42,7 @@ jobs:
     defaults:
       run:
         working-directory: ./envs/prod
+
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -48,6 +50,7 @@ jobs:
       AWS_REGION: "us-east-1"
       TF_VAR_db_password: "dummy_password_for_apply"
       TF_VAR_owner: "gna" # Modifie avec ton trigramme si besoin
+      TF_VAR_environment: "prod"
 
     steps:
       - uses: actions/checkout@v4
