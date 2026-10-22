@@ -25,6 +25,7 @@ jobs:
       AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
       AWS_REGION: "us-east-1"
       TF_VAR_db_password: "dummy_password_for_plan" # Evite que Terraform ne bloque en attendant une saisie
+      TF_VAR_owner: "gna"
 
     steps:
       - name: Checkout du code
