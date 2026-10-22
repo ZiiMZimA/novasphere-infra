@@ -21,7 +21,7 @@ data "http" "my_ip" {
 
 locals {
   my_cidr = "${chomp(data.http.my_ip.response_body)}/32"
-  name    = "novasphere-${var.owner}"
+  name    = "novasphere-${var.environment}-${var.owner}"
 }
 
 resource "aws_key_pair" "main" {
@@ -58,23 +58,13 @@ resource "aws_security_group" "web" {
 }
 
 module "web" {
-  source                 = "./modules/ec2-server"
-  server_name            = "${local.name}-web"
-  instance_type          = var.instance_type
-  ami                    = data.aws_ami.debian.id
-  key_name               = aws_key_pair.main.key_name
-  vpc_security_group_ids = [aws_security_group.web.id]
+  source                 = "git::https://github.com/ZiiMZimA/terraform-aws-ec2-server.git?ref=v1.0.0"
+  server_name            = "novasphere-web"
   role                   = "web"
-}
-
-module "monitoring" {
-  source                 = "./modules/ec2-server"
-  server_name            = "${local.name}-monitoring"
-  instance_type          = var.instance_type
   ami                    = data.aws_ami.debian.id
+  instance_type          = var.instance_type
   key_name               = aws_key_pair.main.key_name
   vpc_security_group_ids = [aws_security_group.web.id]
-  role                   = "monitoring"
 }
 
 resource "local_file" "inventory" {

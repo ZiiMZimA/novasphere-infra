@@ -1,0 +1,44 @@
+name: "Terraform Apply (Dev)"
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'envs/dev/**'
+      - 'envs/modules/**'
+
+jobs:
+  terraform-apply:
+    name: "Terraform Apply"
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: ./envs/dev
+
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+      AWS_REGION: "us-east-1"
+      TF_VAR_db_password: "dummy_password_for_apply"
+      TF_VAR_owner: "gna"
+
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      - name: Installation de Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Création d'une clé SSH temporaire pour CI
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keygen -t rsa -b 2048 -f ~/.ssh/novasphere -N ""  
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
