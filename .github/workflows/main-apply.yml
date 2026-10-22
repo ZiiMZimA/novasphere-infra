@@ -32,6 +32,11 @@ jobs:
       - name: Installation de Terraform
         uses: hashicorp/setup-terraform@v3
 
+      - name: Création d'une clé SSH temporaire pour CI
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keygen -t rsa -b 2048 -f ~/.ssh/novasphere -N ""  
+
       - name: Terraform Init
         run: terraform init
 
