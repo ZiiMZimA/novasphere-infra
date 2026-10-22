@@ -1,28 +1,28 @@
 # Image Debian 12 officielle la plus recente 
-data "aws_ami" "debian" { 
-  most_recent = true 
-  owners      = ["136693071363"] 
- 
-  filter { 
-    name   = "name" 
-    values = ["debian-12-amd64-*"] 
-  } 
- 
-  filter { 
-    name   = "virtualization-type" 
-    values = ["hvm"] 
-  } 
-} 
- 
+data "aws_ami" "debian" {
+  most_recent = true
+  owners      = ["136693071363"]
+
+  filter {
+    name   = "name"
+    values = ["debian-12-amd64-*"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+}
+
 # IP publique du poste qui execute Terraform (pattern my_ip, acquis Bac+4) 
-data "http" "my_ip" { 
-  url = "https://api.ipify.org" 
-} 
- 
-locals { 
-  my_cidr = "${chomp(data.http.my_ip.response_body)}/32" 
-  name    = "novasphere-${var.environment}-${var.owner}" 
-} 
+data "http" "my_ip" {
+  url = "https://api.ipify.org"
+}
+
+locals {
+  my_cidr = "${chomp(data.http.my_ip.response_body)}/32"
+  name    = "novasphere-${var.environment}-${var.owner}"
+}
 
 # Module VPC officiel du registre public (S4) : deux zones, sans NAT Gateway, IP publiques au lancement
 module "vpc" {
@@ -32,17 +32,17 @@ module "vpc" {
   name = "novasphere-${var.environment}"
   cidr = "10.0.0.0/16"
 
-  azs             = ["us-east-1a", "us-east-1b"]
-  public_subnets  = ["10.0.1.0/24", "10.0.2.0/24"]
+  azs            = ["us-east-1a", "us-east-1b"]
+  public_subnets = ["10.0.1.0/24", "10.0.2.0/24"]
 
   enable_nat_gateway      = false
   map_public_ip_on_launch = true
 }
- 
-resource "aws_key_pair" "main" { 
-  key_name   = "${local.name}-key" 
-  public_key = file(pathexpand(var.ssh_public_key_path)) 
-} 
+
+resource "aws_key_pair" "main" {
+  key_name   = "${local.name}-key"
+  public_key = file(pathexpand(var.ssh_public_key_path))
+}
 
 # Security Group pour l'Application Load Balancer (ouvert au public sur le port 80)
 resource "aws_security_group" "alb" {
@@ -65,37 +65,37 @@ resource "aws_security_group" "alb" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
- 
+
 # Security Group pour les instances web (n'autorise le trafic que depuis l'ALB et SSH depuis mon IP)
-resource "aws_security_group" "web" { 
-  name        = "${local.name}-web" 
-  description = "SSH restreint a mon IP, HTTP depuis ALB" 
+resource "aws_security_group" "web" {
+  name        = "${local.name}-web"
+  description = "SSH restreint a mon IP, HTTP depuis ALB"
   vpc_id      = module.vpc.vpc_id
 
-  ingress { 
-    description = "SSH depuis mon poste uniquement" 
-    from_port   = 22 
-    to_port     = 22 
-    protocol    = "tcp" 
-    cidr_blocks = [local.my_cidr] 
-  } 
- 
-  ingress { 
-    description     = "HTTP depuis ALB uniquement" 
-    from_port       = 80 
-    to_port         = 80 
-    protocol        = "tcp" 
-    security_groups = [aws_security_group.alb.id] 
-  } 
- 
-  egress { 
-    from_port   = 0 
-    to_port     = 0 
-    protocol    = "-1" 
-    cidr_blocks = ["0.0.0.0/0"] 
-  } 
-} 
- 
+  ingress {
+    description = "SSH depuis mon poste uniquement"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = [local.my_cidr]
+  }
+
+  ingress {
+    description     = "HTTP depuis ALB uniquement"
+    from_port       = 80
+    to_port         = 80
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb.id]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
 # Launch Template (le moule des instances pour l'ASG)
 resource "aws_launch_template" "web_dev" {
   name_prefix            = "novasphere-${var.environment}-"
@@ -112,8 +112,8 @@ resource "aws_launch_template" "web_dev" {
 
   # Ajout du profil d'instance IAM pour les secrets
   iam_instance_profile {
-  arn = data.aws_iam_instance_profile.lab.arn
-  }  
+    arn = data.aws_iam_instance_profile.lab.arn
+  }
 
   tag_specifications {
     resource_type = "instance"
