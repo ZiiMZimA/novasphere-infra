@@ -103,7 +103,9 @@ resource "aws_launch_template" "web_dev" {
   instance_type          = var.instance_type
   key_name               = aws_key_pair.main.key_name
   vpc_security_group_ids = [aws_security_group.web.id]
-  user_data              = base64encode(file("${path.module}/bootstrap.sh"))
+  user_data               = base64encode(templatefile("${path.module}/bootstrap.sh", {
+    environment = var.environment
+  }))
 
   # Forcer IMDSv2 pour la sécurité (Correction CKV_AWS_79)
   metadata_options {
