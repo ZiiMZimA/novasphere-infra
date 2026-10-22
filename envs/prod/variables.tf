@@ -1,7 +1,7 @@
 variable "aws_region" {
   description = "Region AWS de deploiement"
   type        = string
-  default     = "eu-west-3"
+  default     = "us-east-1"
 }
 
 variable "owner" {
@@ -24,4 +24,9 @@ variable "ssh_public_key_path" {
   description = "Chemin vers la cle publique SSH a deployer sur l'instance"
   type        = string
   default     = "~/.ssh/novasphere.pub"
+}
+
+variable "environment" {
+  type    = string
+  default = "dev"
 }
