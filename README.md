@@ -1,40 +1,23 @@
-# novasphere-infra
+# Infrastructure NovaSphere
 
-Depot de depart du module Bac+5 « Terraform et Automatisation du deploiement d'infrastructures dans le cloud ».
-Il represente l'infrastructure NovaSphere en etat de fin de module Bac+4 : une instance EC2 Debian
-provisionnee par Terraform, configuree par Ansible, avec un inventaire genere automatiquement.
+Voici le process pour déployer notre infrastructure from scratch. 
 
-## Prerequis
+## Les Prérequis
+* Il faut Terraform installé (v1.14 minimum).
+* il AWS CLI configuré (renseigné dans ~/.aws/credentials à jour avec les clés temporaires de l'AWS Learner Lab).
 
-- Terraform >= 1.14, AWS CLI v2 configure (`aws sts get-caller-identity` repond), ansible-core 2.21 (Python 3.12+), Git
-- Une paire de cles SSH : `ssh-keygen -t ed25519 -f ~/.ssh/novasphere -N ""`
+## Déploiement
+1. On exporte le mot de passe en variable d'environnement pour ne pas l'écrire en dur :
+   exemple : export TF_VAR_db_password="Password_971"`
+2. On se place dans l'environnement voulu (ex: dev) : 
+   cd envs/dev
+3. On initialise Terraform : 
+   terraform init
+4. On déploie : 
+   terraform apply -auto-approve
 
-## Demarrage
+## Destruction (Très important !)
+Pour ne pas gaspiller les crédits du lab, toujours détruire l'infra complète après usage (## Destruction (Très important !):
 
-```bash
-cd terraform
-cp terraform.tfvars.example terraform.tfvars   # renseigner votre trigramme
-terraform init
-terraform apply
-cd ../ansible
-ansible-playbook site.yml
-curl http://$(cd ../terraform && terraform output -raw web_public_ip)
-```
-
-## Fin de journee
-
-```bash
-./scripts/stop-evening.sh     # le lendemain : ./scripts/start-morning.sh
-```
-
-En fin de module : `terraform destroy` depuis `terraform/`.
-
-## Structure
-
-```
-terraform/   versions.tf, variables.tf, main.tf, outputs.tf, inventory.tftpl
-ansible/     site.yml, ansible.cfg, roles/web (tasks, handlers, templates, defaults)
-scripts/     stop-evening.sh, start-morning.sh
-```
-
-Le fichier `ansible/inventory.ini` n'est pas versionne : il est produit par `terraform apply`.
+1. cd envs/prod && terraform destroy -auto-approve
+2. cd ../dev && terraform destroy -auto-approve

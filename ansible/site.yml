@@ -1,6 +1,7 @@
----
-- name: Configuration du serveur web NovaSphere
-  hosts: web
-  become: true
-  roles:
+--- 
+- name: Configuration du serveur web NovaSphere 
+  hosts: localhost 
+  connection: local
+  become: true 
+  roles: 
     - web

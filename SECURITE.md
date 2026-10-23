@@ -1,3 +1,17 @@
+# Registre de Sécurité
+
+## Gestion des secrets
+Le mot de passe de la DB ne traîne jamais en clair. Terraform l'envoie dans AWS Parameter Store en mode écriture seule (`value_wo`). L'instance le récupère toute seule au démarrage.
+
+## Rôles IAM
+Vu qu'on travaille sur l'AWS Learner Lab, on est contraints d'utiliser le profil préexistant `LabInstanceProfile`. Si on avait les droits IAM complets, la politique restreindrait la lecture SSM strictement au chemin `/novasphere/dev/*` ou `/novasphere/prod/*`.
+
+## Scans Checkov
+* **CKV_AWS_79 (IMDSv2 sur Launch Template) :** Corrigé. Ajout du bloc `metadata_options` avec `http_tokens = "required"`.
+* **CKV_AWS_131 (Headers ALB) :** Corrigé. Ajout de `drop_invalid_header_fields = true` sur le Load Balancer.
+* **CKV_AWS_2 (ALB HTTPS) :** Ignoré via `#checkov:skip=CKV_AWS_2:Pas de nom de domaine ni de certificat HTTPS pour le dev`. Le projet étant académique et hébergé sur le Learner Lab, nous restons sur du HTTP standa
+
+## Exemple des modifications pour les correstions :
 CKV_AWS_79 (IMDSv2) :
 
 resource "aws_launch_template" "web" {
@@ -22,7 +36,8 @@ resource "aws_lb_listener" "http" {
 }
 
 
-Liste des alertes suite au checkov préalable :
+##Liste des alertes suite au checkov préalable :
+
 zima@debian:~/novasphere-infra-starter/envs/dev$ checkov -d . --framework terraform --compact
 2026-10-22 12:46:56,424 [MainThread  ] [WARNI]  Failed to download module terraform-aws-modules/vpc/aws:~> 6.0 (for external modules, the --download-external-modules flag is required)
 2026-10-22 12:46:56,425 [MainThread  ] [WARNI]  Module /home/zima/novasphere-infra-starter/envs/modules/ec2-server:latest failed to load via <class 'checkov.terraform.module_loading.loaders.local_path_loader.LocalPathLoader'> due to: /home/zima/novasphere-infra-starter/envs/modules/ec2-server
