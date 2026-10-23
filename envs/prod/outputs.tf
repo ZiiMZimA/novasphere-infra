@@ -1,14 +1,14 @@
-output "web_public_ip" {
-  description = "IP publique de module web"
-  value       = module.web.public_ip
+output "alb_dns_name" {
+  description = "DNS de l'Application Load Balancer"
+  value       = aws_lb.web.dns_name
 }
 
-output "web_instance_id" {
-  description = "Identifiant de l'instance (utilise par les scripts stop/start)"
-  value       = module.web.id
+output "asg_name" {
+  description = "Nom du groupe d'auto-scaling"
+  value       = aws_autoscaling_group.web.name
 }
 
-output "ssh_command" {
-  description = "Commande de connexion"
-  value       = "ssh -i ~/.ssh/novasphere admin@${module.web.public_ip}"
+output "vpc_id" {
+  description = "ID du VPC"
+  value       = module.vpc.vpc_id
 }
