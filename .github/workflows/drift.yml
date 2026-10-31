@@ -1,0 +1,33 @@
+name: "Detection de derive"
+
+# Lance a la main depuis l'onglet Actions (Run workflow)
+on:
+  workflow_dispatch:
+
+jobs:
+  drift:
+    name: "Derive ${{ matrix.env }}"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        env: [dev, prod]
+    defaults:
+      run:
+        working-directory: ./envs/${{ matrix.env }}
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+      AWS_REGION: "us-east-1"
+      TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
+      TF_VAR_owner: "gna"
+      TF_VAR_environment: ${{ matrix.env }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+      - run: terraform init
+      # 0 = rien a changer, 1 = erreur, 2 = derive detectee (le job echoue)
+      - run: terraform plan -detailed-exitcode -no-color

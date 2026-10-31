@@ -14,14 +14,8 @@ data "aws_ami" "debian" {
   }
 }
 
-# IP publique du poste qui execute Terraform (pattern my_ip, acquis Bac+4) 
-data "http" "my_ip" {
-  url = "https://api.ipify.org"
-}
-
 locals {
-  my_cidr = "${chomp(data.http.my_ip.response_body)}/32"
-  name    = "novasphere-${var.environment}-${var.owner}"
+  name = "novasphere-${var.environment}-${var.owner}"
 }
 
 # Module VPC officiel du registre public (S4) : deux zones, sans NAT Gateway, IP publiques au lancement
@@ -37,11 +31,6 @@ module "vpc" {
 
   enable_nat_gateway      = false
   map_public_ip_on_launch = true
-}
-
-resource "aws_key_pair" "main" {
-  key_name   = "${local.name}-key"
-  public_key = file(pathexpand(var.ssh_public_key_path))
 }
 
 # Security Group pour l'Application Load Balancer (ouvert au public sur le port 80)
@@ -66,19 +55,11 @@ resource "aws_security_group" "alb" {
   }
 }
 
-# Security Group pour les instances web (n'autorise le trafic que depuis l'ALB et SSH depuis mon IP)
+# Security Group pour les instances web (n'autorise que le HTTP venant de l'ALB, pas de SSH : la config passe par ansible-pull)
 resource "aws_security_group" "web" {
   name        = "${local.name}-web"
   description = "SSH restreint a mon IP, HTTP depuis ALB"
   vpc_id      = module.vpc.vpc_id
-
-  ingress {
-    description = "SSH depuis mon poste uniquement"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = [local.my_cidr]
-  }
 
   ingress {
     description     = "HTTP depuis ALB uniquement"
@@ -101,7 +82,6 @@ resource "aws_launch_template" "web_dev" {
   name_prefix            = "novasphere-${var.environment}-"
   image_id               = data.aws_ami.debian.id
   instance_type          = var.instance_type
-  key_name               = aws_key_pair.main.key_name
   vpc_security_group_ids = [aws_security_group.web.id]
   user_data = base64encode(templatefile("${path.module}/bootstrap.sh", {
     environment = var.environment

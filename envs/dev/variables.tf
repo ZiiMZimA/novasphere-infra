@@ -20,12 +20,6 @@ variable "instance_type" {
   default     = "t3.micro"
 }
 
-variable "ssh_public_key_path" {
-  description = "Chemin vers la cle publique SSH a deployer sur l'instance"
-  type        = string
-  default     = "~/.ssh/novasphere.pub"
-}
-
 variable "environment" {
   type    = string
   default = "dev"

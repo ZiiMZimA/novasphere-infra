@@ -20,14 +20,11 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
       AWS_REGION: "us-east-1"
-      TF_VAR_db_password: "dummy_password_for_plan"
+      TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
       TF_VAR_owner: "gna"
     steps:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
-      - run: |
-          mkdir -p ~/.ssh
-          ssh-keygen -t rsa -b 2048 -f ~/.ssh/novasphere -N ""
       - run: terraform init
       - run: terraform fmt -check
       - run: terraform validate
@@ -44,14 +41,11 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
       AWS_REGION: "us-east-1"
-      TF_VAR_db_password: "dummy_password_for_plan"
+      TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
       TF_VAR_owner: "gna"
     steps:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
-      - run: |
-          mkdir -p ~/.ssh
-          ssh-keygen -t rsa -b 2048 -f ~/.ssh/novasphere -N ""
       - run: terraform init
       - run: terraform fmt -check
       - run: terraform validate
