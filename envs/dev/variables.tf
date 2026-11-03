@@ -5,7 +5,7 @@ variable "aws_region" {
 }
 
 variable "owner" {
-  description = "Trigramme de l'etudiant, utilise pour nommer et tagger les ressources"
+  description = "Trigramme de l'etudiant"
   type        = string
 
   validation {
@@ -21,12 +21,17 @@ variable "instance_type" {
 }
 
 variable "environment" {
-  type    = string
-  default = "dev"
+  description = "Environnement cible de deploiement"
+  type        = string
+
+  validation {
+    condition     = contains(["dev", "prod"], var.environment)
+    error_message = "L'environnement doit obligatoirement etre 'dev' ou 'prod'."
+  }
 }
 
 variable "db_password" {
-  description = "Mot de passe applicatif, fourni par TF_VAR_db_password"
+  description = "Mot de passe applicatif fourni par TF_VAR_db_password"
   type        = string
   ephemeral   = true
 }
