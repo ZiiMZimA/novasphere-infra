@@ -170,3 +170,4 @@ moved {
   to   = aws_launch_template.web_dev
 }
 # Test de déclenchement CI/CD
+# test de déclenchment CI etc ..
