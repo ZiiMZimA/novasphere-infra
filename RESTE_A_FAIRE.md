@@ -1,36 +1,34 @@
-# Reste à faire
+# Fiche Reste à Faire — Suivi Séance 9 et Corrections
 
-> La fiche papier de la séance 9 n'a pas été retrouvée au moment du gel.
-> Ce document fait le point sur l'état du dépôt au moment du tag `rendu-final`,
-> à partir d'une relecture du dépôt face au cahier des charges.
+> Bilan suite à la fiche de la séance 9 et au gel du dépôt (tag `rendu-final` du 31 octobre).
+> Ce document fait le point sur les écarts constatés et sur la répartition des correctifs sur la branche `correction`.
 
-Équipe :
+## 1. État au moment du gel (tag `rendu-final`)
+* [x] Environnement dev fonctionnel avec ALB.
+* [x] Mot de passe géré via AWS SSM Parameter Store (`SecureString`, `value_wo`).
+* [x] Environnement `prod` protégé par approbation manuelle dans GitHub Actions.
+* [ ] **Écart 1 (Ansible)** : La prod affichait "dev" sur la page web car le tag d'environnement n'était pas passé à `ansible-pull`.
+* [ ] **Écart 2 (Nettoyage)** : Dossiers de test résiduels (`envs/dev/dev/`, `modules/`) et règle SSH encore présente dans le Security Group.
+* [ ] **Écart 3 (CI/CD)** : Le plan bloquait sur GitHub Actions par manque de la variable `TF_VAR_environment` et de `-input=false`.
+* [ ] **Écart 4 (Docs & Déploiement from scratch)** : Le `README.md` initial omettait l'étape `cp terraform.tfvars.example terraform.tfvars` lors d'un `git clone` vierge, provoquant un arrêt interactif sur `var.environment` ; il manquait aussi la commande de vérification de l'URL de l'ALB.
 
-## État au gel
+## 2. Répartition du travail sur la branche `correction`
 
-- [ ] dev déployé par la CI, l'ALB répond
-- [x] secret en Parameter Store (SecureString, écrit en `value_wo`)
-- [x] prod : environnement GitHub `prod` protégé par approbation
+### Gilles (ZiiMZimA) — Référent AWS / Infra
+* [x] Nettoyage des dossiers parasites et suppression de la règle SSH du Security Group.
+* [x] Correction du script `bootstrap.sh` avec `-e "web_environment=${environment}"`.
+* [x] Rédaction de `CADRAGE.md`, `ARCHITECTURE.md`, et refonte du `README.md`.
 
-## Écarts connus par rapport au socle
+### Erwan (Paynayt) — Référent CI/CD
+* [x] Correction du workflow `pr-plan.yml` (ajout de `TF_VAR_environment` et `-input=false`).
+* [x] Déblocage des verrous S3 suite aux runs interrompus (`force-unlock`).
+* [x] Validation du pipeline avec la PR #9 (`test/validiation-ci`) qui passe au vert en 34s.
 
-1. **Module d'équipe versionné par tag**
-   Le module `ec2-server` est resté en local dans `envs/dev/modules/` et n'est pas utilisé.
-   Il aurait fallu le sortir dans son propre dépôt (`terraform-aws-<nom>`), poser un tag `v1.0.0`
-   et l'appeler depuis `envs/dev` et `envs/prod` avec `?ref=v1.0.0`.
+### Théo (HamlyZion) — Référent Sécurité
+* [x] Scan Checkov et traitement des alertes (IMDSv2, headers ALB, skips justifiés).
+* [x] Rédaction de la politique IAM minimale SSM dans `SECURITE.md`.
 
-2. **SSH et IP dynamique sur le Security Group web**
-   Le port 22 est ouvert vers l'IP de la machine qui lance Terraform (`data "http"` → `local.my_cidr`).
-   Le cahier des charges demande aucun port SSH. Et comme l'IP du runner GitHub change à chaque run,
-   le plan en CI n'est jamais vide.
-   Correction prévue : supprimer la règle SSH et la data source `http`, passer par SSM Session Manager si besoin d'un accès.
-
-3. **Chaîne CI incomplète**
-   - plan pas posté en commentaire de la PR ;
-   - apply lancé directement au lieu de partir d'un fichier de plan (`plan -out` puis `apply tfplan`) ;
-   - pas de job de détection de dérive (`plan -detailed-exitcode` en `workflow_dispatch`) ;
-   - mot de passe factice écrit en clair dans les workflows, à remplacer par un secret GitHub (`${{ secrets.DB_PASSWORD }}`).
-
-## Nettoyage
-
-- Supprimer les dossiers de test inutilisés : `envs/dev/dev/`, `envs/dev/modules/`, `terraform/`.Date de gel (tag `rendu-final`) : ______
+### Ariel (Afro) — Référent Qualité & Documentation
+* [x] Mise au propre des 8 règles d'équipe dans `CONTRIBUTING.md`.
+* [x] Suivi et mise à jour de la présente fiche `RESTE_A_FAIRE.md`.
+* [x] Relecture croisée des PRs du groupe.
