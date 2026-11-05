@@ -1,3 +1,4 @@
+# Test du declenchement CD automatique
 # Image Debian 12 officielle la plus recente 
 data "aws_ami" "debian" {
   most_recent = true
