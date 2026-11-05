@@ -1,49 +1,33 @@
-# Choix d'Architecture — NovaSphere
+# Fiche de Cadrage — Projet NovaSphere (Séance 8)
 
-## 1. Schéma d'architecture
+## 1. Membres du groupe (Groupe 8)
+* **Gilles (ZiiMZimA)** : Référent AWS / Infra
+* **Erwan (Paynayt)** : Référent Git & CI/CD
+* **Théo (HamlyZion)** : Référent Sécurité & IAM
+* **Serge (Afro) ** : Référent Qualité & Documentation
 
-```text
-                           Internet
-                              │
-                              ▼ HTTP (port 80)
-                   [ Application Load Balancer ]
-                    (2 zones : us-east-1a, 1b)
-                              │
-                    ┌─────────┴─────────┐
-                    ▼                   ▼
-            [ Public Subnet 1 ]  [ Public Subnet 2 ]
-               (us-east-1a)         (us-east-1b)
-                    │                   │
-                    ▼                   ▼
-             [ EC2 Web Dev ]     [ EC2 Web Dev ]
-             (Auto Scaling Group : 2 à 4 instances)
-                    │
-                    ▼ Récupère le mot de passe au boot
-          [ AWS SSM Parameter Store ]
-          (/novasphere/dev/db_password)
-```
+*On tourne sur les revues de PR et les manipulations AWS.*
 
-## 2. Nos choix techniques
+## 2. Contexte métier
+NovaSphere est une jeune startup SaaS qui développe une plateforme web d'analyse pour les entreprises. Notre rôle est de déployer et gérer l'infrastructure cloud qui héberge le site web de l'application. On doit garantir que le site reste accessible même en cas de panne d'une machine, tout en séparant bien l'environnement de dev et de prod.
 
-### Séparation par dossiers (envs/dev et envs/prod) vs Workspaces
-Nous avons choisi de séparer dev et prod dans deux dossiers distincts avec chacun leur propre code, leur fichier `terraform.tfvars` et leur propre backend S3.
-Nous n'avons pas pris les workspaces Terraform car ils partagent le même fichier d'état racine : une mauvaise commande `terraform workspace select` et on risquait d'écraser la prod en voulant tester en dev. Avec deux dossiers, l'isolation est totale.
+## 3. Ce que servent les instances
+Les instances EC2 tournent sous Debian 12 avec un serveur Nginx. Elles affichent la page web de NovaSphere avec le nom de la machine et l'environnement actif (dev ou prod). Elles reçoivent les requêtes HTTP (port 80) renvoyées par l'Application Load Balancer (ALB) et récupèrent le mot de passe de base de données stocké dans AWS Parameter Store au démarrage.
 
-### Sous-réseaux publics sans NAT Gateway
-Nous avons mis nos instances dans les sous-réseaux publics en désactivant la NAT Gateway (`enable_nat_gateway = false`).
-* **Pourquoi ?** Une NAT Gateway coûte environ 0,05 $ de l'heure (~35 $ par mois). Avec le budget limité de 100 $ sur l'AWS Learner Lab, deux NAT Gateways en multi-AZ auraient vidé nos crédits en quelques jours.
-* **Et la sécurité ?** Même si les instances ont une IP publique pour télécharger les paquets et le playbook Ansible, leur Security Group bloque tout : aucun port SSH (22) n'est ouvert, et le port 80 n'accepte que le trafic qui vient du Security Group de l'ALB. Personne ne peut attaquer les VM directement depuis Internet.
+## 4. Extension choisie : Configuration par Ansible (ansible-pull)
+On a choisi de configurer les machines avec Ansible en mode pull au boot (`ansible-pull`).
+Ce que ça demande :
+* Un script de bootstrap simple (`bootstrap.sh`) de moins de 10 lignes qui installe Ansible, Git et AWS CLI.
+* L'instance télécharge toute seule le playbook depuis GitHub via HTTPS et l'applique en local (`localhost`).
+* Pas besoin d'ouvrir le port SSH (22) ni de gérer des clés privées, ce qui est beaucoup plus sécurisé.
+* On passe le tag `-e "web_environment=${environment}"` pour que la prod affiche bien "prod" et non "dev".
 
-### Haute disponibilité (Multi-AZ)
-L'ALB et l'Auto Scaling Group sont répartis sur deux zones (`us-east-1a` et `us-east-1b`). On a fixé l'ASG à 2 instances minimum (et 4 au max). Si une instance plante, l'ASG la remplace automatiquement.
+## 5. Extensions écartées
+* **Bastion SSH / Accès SSH direct** : Écarté car on ne veut ouvrir aucun port d'administration sur Internet. Si on doit se connecter à une instance, on utilise AWS SSM Session Manager.
+* **HTTPS / Certificat TLS** : Écarté parce que sur l'AWS Learner Lab, on n'a pas de nom de domaine public ni accès à Route 53 pour valider un certificat ACM.
 
-### Durcissement de la sécurité
-* **IMDSv2 obligatoire** : On a forcé `http_tokens = "required"` dans le Launch Template pour bloquer les failles SSRF.
-* **Headers ALB** : On a activé `drop_invalid_header_fields = true` pour rejeter les requêtes HTTP malformées.
-* **Secrets** : Le mot de passe DB est envoyé dans SSM Parameter Store en `SecureString` avec `value_wo = var.db_password` pour qu'il n'apparaisse jamais en clair dans le state S3 ni dans les logs du plan.
-
-## 3. Extension Ansible (ansible-pull)
-Au lieu de pousser la conf depuis une machine avec des clés SSH, les instances s'auto-configurent au démarrage (`user_data`) :
-1. Le script `bootstrap.sh` (6 lignes) installe Ansible et AWS CLI.
-2. Il récupère le mot de passe depuis SSM et le met dans `/etc/novasphere/app.conf` (droits 0640).
-3. Il lance `ansible-pull` sur notre repo GitHub avec le tag de l'environnement (`-e "web_environment=${environment}"`).
+## 6. Compte AWS pour la démo
+* Plateforme : AWS Academy Learner Lab
+* Région : `us-east-1`
+* Account ID : `058264354274`
+* Rôle IAM des instances : `LabInstanceProfile` (rôle imposé par le lab)
