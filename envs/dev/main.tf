@@ -103,6 +103,7 @@ resource "aws_launch_template" "web_dev" {
     tags = {
       Name = "novasphere-${var.environment}-web"
       Role = "web"
+      Demo = "Live-Soutenance"
     }
   }
 }
