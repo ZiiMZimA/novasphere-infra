@@ -173,3 +173,6 @@ moved {
 }
 # Test de déclenchement CI/CD
 # test de déclenchment CI etc ..
+# Test pres
+# Test pres
+# Test pres
